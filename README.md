@@ -1,12 +1,12 @@
 # myproject
-Weekly Investment Report
+#Weekly Investment Report
 
-Trumpas aprašymas:
+## Trumpas aprašymas:
 
 Weekly automatinis report script-generatorius su paruoštu stiliaus template (galbūt koks nors API, galbūt PY biblioteka) PDF formatu bei PNG formatais (medžiaga, )
 
 
-Duomenų šaltiniai:
+## Duomenų šaltiniai:
 
 nasdaqomxbaltic.com, excel failas-duombazė.
 
