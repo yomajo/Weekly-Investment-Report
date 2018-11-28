@@ -1,30 +1,30 @@
-# myproject
 #Weekly Investment Report
 
 ## Trumpas aprašymas:
 
-Weekly automatinis report script-generatorius su paruoštu stiliaus template (galbūt koks nors API, galbūt PY biblioteka) PDF formatu bei PNG formatais (medžiaga, )
+Weekly automatinis report script-generatorius su paruoštu stiliaus template (galbūt koks nors API, galbūt PY biblioteka) PDF formatu bei PNG formatais (content fb page/ twitter paskyroms)
 
 
 ## Duomenų šaltiniai:
 
-nasdaqomxbaltic.com, excel failas-duombazė.
+-[Nasdaqomxbaltic](http://wwww.nasdaqomxbaltic.com)
+-excel failas-duombazė
 
 
-Turinys:
+## Report turinys:
 
--Top 5 best/worst performers of the week.
+-Top 5 best/worst performers of the week. Pvz:
 -Scrape related news from these performers.
--savaitės uždarymo kainas supushinti į excel duombazę, ištraukti išrūšiuotas top 10 pagal pigumą (tam tikras pagal kainas apskaičiuotas rodiklis)
+-savaitės uždarymo kainas supushinti į excel duombazę, ištraukti išrūšiuotas top 10 pagal pigumą (tam tikras pagal kainas apskaičiuotas rodiklis excel duombazėje)
 -pateikti selected santykinius rodiklius su naujausiomis penktadienio sesijos uždarymo kainomis.
 -įkalt disclaimer apačioj (static text)
 
-Potencialūs tobulinimai:
+## Potencialūs tobulinimai:
 -twitter boto kūrimas
 -ir šio reporto tweetinimas penktadienio vakarą
 
 
-Kriterijai projektui:
+## Kriterijai projektui:
 
 -naudingumas
 -originalumas
@@ -32,4 +32,6 @@ Kriterijai projektui:
 -stilius
 -dokumentacija
 -versijų kontrolė
--import this
+-'import this'
+
+Now get to `coding`
