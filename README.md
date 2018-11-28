@@ -7,7 +7,7 @@ Weekly automatinis report script-generatorius su paruoštu stiliaus template (ga
 
 ## Duomenų šaltiniai:
 
-- [Nasdaqomxbaltic](http://wwww.nasdaqomxbaltic.com)
+- [Nasdaqomxbaltic](http://www.nasdaqomxbaltic.com)
 - excel failas-duombazė
 
 
