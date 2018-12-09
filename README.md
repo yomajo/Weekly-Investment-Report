@@ -87,7 +87,7 @@ Output:
 ### stock_info_scraper.py Method "related_annoncements"
 Another Scraper Class method should have 10 companies as inputs from performance_evaluation.py module
 and scrape related news from these companies over the period (starting and ending date range) again defined
-by datehhandler.py
+by datehhandler.py 
 
 Inputs:
 - 10 companies from performance_evaluation.py
