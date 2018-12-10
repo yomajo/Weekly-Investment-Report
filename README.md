@@ -68,7 +68,7 @@ Input:
 - output from stock_closing_prices over two dates passed by datehander.py
 
 Output:
-- csv/excel two arrays of best and worst performing stocks over the last week.
+- csv/excel two arrays of best and worst performing stocks over the last week (max percentage gain and worst percentage decline).
 
 
 ### datehander.py
@@ -98,8 +98,25 @@ Output:
 
 Source url: http://www.nasdaqbaltic.com/market/?page=1&issuer=&market=&legal%5B0%5D=main&legal%5B1%5D=firstnorth&start=2018-11-01&end=2018-12-07&keyword=&pg=news&lang=en&currency=EUR&downloadcsv=0 
 
-### Screener (excel file) screener_handler.py (*unfinished*)
-Script takes closing prices of all companies, inputs into certain sheet, cells new prices, sorts table by certain criteria and outputs 5 companies based on it.
+### Screener (excel file) handler "screener_handler.py"
 
-### report_generator.py (*unfinished*)
+Script takes closing prices of Friday's session of all listed companies, writes into certain sheet fresh prices, sorts table on the other sheet by certain criteria and outputs 5 companies based on it.
+
+Inputs:
+- output from stock_closing_prices scraper.
+
+Output:
+- list of five companies, and their corresponding EV/EBITDA ratio sorted from least to maximum.
+
+
+### Generating actual Report "report_generator.py" (*unfinished*)
 Takes all the required inputs, template excel file, fills the fields, and saves a new document in multiple formats.
+
+Inputs:
+- Template.xlsx
+- Output from datehandler.py, performance_evaluation.py, related_announcements and screener_handler.py
+
+Output:
+- Weekly Report file in PDF, JPEG.
+
+___
