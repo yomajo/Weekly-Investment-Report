@@ -109,7 +109,7 @@ Output:
 - list of five companies, and their corresponding EV/EBITDA ratio sorted from least to maximum.
 
 
-### Generating actual Report "report_generator.py" (*unfinished*)
+### Generating actual Report "report_generator.py"
 Takes all the required inputs, template excel file, fills the fields, and saves a new document in multiple formats.
 
 Inputs:
