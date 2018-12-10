@@ -11,7 +11,7 @@ Weekly automatinis report script-generatorius su paruoštu stiliaus template (ga
 - excel failas-duombazė
 
 
-## Report turinys:
+## Report turinys: 
 
 - Top 5 best/worst performers of the week. Pvz:
 
