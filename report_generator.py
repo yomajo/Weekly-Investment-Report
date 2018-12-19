@@ -6,6 +6,7 @@ import time
 import io
 import unicodedata
 import pandas as pd
+from itertools import chain
 
 REPORT_FORMAT = "png"
 
@@ -42,7 +43,7 @@ class InvestmentReport:
             if i.has_attr("id"):
                 companies_rows.append(i)
         # preparing output list:
-        stock_closing_prices = []
+        self.stock_closing_prices = []
 
         for i in range(len(companies_rows)):
             # temporary list for one company to be filled and appended to stock_closing_prices of lists.
@@ -64,19 +65,52 @@ class InvestmentReport:
             one_company_info[2] = company_last_price
 
             # making list of lists:
-            stock_closing_prices.append(one_company_info)
+            self.stock_closing_prices.append(one_company_info)
 
         # using pandas to export list of lists to a csv file:
-        self.my_df = pd.DataFrame(stock_closing_prices)
-        # export_filenaname = 'nasdaq'+''
+        self.my_df = pd.DataFrame(self.stock_closing_prices)
+        # export_filenaname = 'nasdaq'+str(url)
         self.my_df.to_csv(
-            "nasdaq_last_prices_export_list.csv", index=False, header=False
+            "nasdaq_prices"+url[-18:]+".csv", index=False, header=False
         )
+
+
+    def performace_evaluation(self):
+        '''method takes two csv files, and returns one excel file with two sheets of top and worst 5 (10 in total)
+        performers. Method also returns two lists for potential further scraping of related companies announcements'''
+        # reading csv data:
+        last_week_df = pd.read_csv('nasdaq_prices2018.12.11&lang=en.csv', names=['Company', 'Ticker', 'Last week price'])
+        today_df = pd.read_csv('nasdaq_prices2018.12.18&lang=en.csv', names=['Company', 'Ticker', 'Last price'])
+        data_from_last_week_df = last_week_df[['Ticker', 'Last week price']]
+        data_from_today_df = today_df['Last price']
+       
+        # joining dataframes and making a relative price change calulation:
+        joint_df = pd.concat([data_from_last_week_df, data_from_today_df], axis=1, join='inner')
+        joint_df['Change, %'] = (joint_df['Last price'] - joint_df['Last week price'])/joint_df['Last week price']
+        
+        # top and worst performers from sorted joint dataframe:
+        top_performers = joint_df.sort_values(by='Change, %', ascending=False).drop(columns = ['Last week price', 'Last price']).head(5)
+        worst_performers = joint_df.sort_values(by='Change, %').drop(columns = ['Last week price', 'Last price']).head(5)
+        
+        # writing to a common excel file, different sheets:
+        writer = pd.ExcelWriter('Performance.xlsx')
+        top_performers.to_excel(writer, sheet_name='Top performers', index=False)
+        worst_performers.to_excel(writer, sheet_name='Worst Performers', index=False)
+        writer.save()
+
+        #creating two lists for potential future scraping:
+        top_performers_to_be_list = top_performers.drop(columns = ['Change, %'])
+        worst_performers_to_be_list = worst_performers.drop(columns = ['Change, %'])
+        self.top_performers_list = list(chain.from_iterable(top_performers_to_be_list.values.tolist()))
+        self.worst_performers_list = list(chain.from_iterable(worst_performers_to_be_list.values.tolist()))
+
 
     def run(self):
         self.url_builder()
         self.scrape_last_prices(self.url_prices_last_week)
-
+        self.scrape_last_prices(self.url_prices_today)
+        #self.performace_evaluation()
+        #self.generate_report()
         # self.get_twitter()
         # url.builder()
         # scrape_last_prices( url1 ...)
@@ -89,5 +123,3 @@ if __name__ == "__main__":
     gimme_report.run()
 
 
-# my_dates = InvestmentReport()
-# my__test_output = my_dates.url_builder()
