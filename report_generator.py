@@ -31,8 +31,9 @@ class InvestmentReport:
         self.url_prices_today = template_url1.replace("yyyy.mm.dd", date_of_today)
         self.url_prices_last_week = template_url1.replace("yyyy.mm.dd", last_week_date)
 
+
     def scrape_last_prices(self, url):
-        """scrape_last_prices method outputs csv file of Nasdaqomxbaltic last prices"""
+        """Method scrapes nasdaqomxbaltic.com prices list url with certain date and outputs csv file of listed companies last prices"""
         r = requests.get(url)
         soup = BeautifulSoup(r.text, "lxml")
         # finding all table rows:
@@ -45,10 +46,10 @@ class InvestmentReport:
         # preparing output list:
         self.stock_closing_prices = []
 
-        for i in range(len(companies_rows)):
+        for company in companies_rows):
             # temporary list for one company to be filled and appended to stock_closing_prices of lists.
             one_company_info = ["", "", ""]
-            td_tag_within_company_row = companies_rows[i].findAll("td")
+            td_tag_within_company_row = company.findAll("td")
             # company name for i item
             company_name = td_tag_within_company_row[0].text
 
@@ -109,7 +110,7 @@ class InvestmentReport:
         self.url_builder()
         self.scrape_last_prices(self.url_prices_last_week)
         self.scrape_last_prices(self.url_prices_today)
-        #self.performace_evaluation()
+        self.performace_evaluation()
         #self.generate_report()
         # self.get_twitter()
         # url.builder()
