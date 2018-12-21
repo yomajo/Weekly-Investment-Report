@@ -6,6 +6,7 @@ import io
 import unicodedata
 import pandas as pd
 from itertools import chain
+import logging
 
 REPORT_FORMAT = "png"
 
@@ -25,6 +26,10 @@ class InvestmentReport:
         self.url_prices_today = template_url1.replace("yyyy.mm.dd", self.date_of_today_string)
         self.url_prices_last_week = template_url1.replace("yyyy.mm.dd", self.last_week_date_string)
 
+    def server_response_checker(self):
+        nasdaqomxbaltic_home_url = 'http://www.nasdaqbaltic.com/market/?lang=en'
+        r_check = requests.get(nasdaqomxbaltic_home_url)
+        self.server_response = r_check.status_code
 
     def scrape_last_prices(self, url):
         """Method scrapes nasdaqomxbaltic.com prices list url with certain date and outputs csv file of listed companies last prices"""
@@ -72,7 +77,6 @@ class InvestmentReport:
         self.prices = pd.DataFrame(self.stock_closing_prices)
         self.prices.to_csv(self.csv_filename_prices, index=False, header=False)
 
-
     def performace_evaluation(self):
         '''method takes two csv files, and returns one excel file with two sheets of top and worst 5 (10 in total)
         performers. Method also returns two lists for potential further scraping of related companies announcements'''
@@ -102,16 +106,15 @@ class InvestmentReport:
         self.top_performers_list = list(chain.from_iterable(top_performers_to_be_list.values.tolist()))
         self.worst_performers_list = list(chain.from_iterable(worst_performers_to_be_list.values.tolist()))
 
-
     def run(self):
-        self.url_builder()
-        self.scrape_last_prices(self.url_prices_last_week)
-        self.scrape_last_prices(self.url_prices_today)
-        self.performace_evaluation()
-        #self.generate_report()
-        # self.get_twitter()
-        # url.builder()
-        # other methods required to generate a report
+        self.server_response_checker()
+        if self.server_response == 200:
+            self.url_builder()
+            self.scrape_last_prices(self.url_prices_last_week)
+            self.scrape_last_prices(self.url_prices_today)
+            self.performace_evaluation()
+        else:
+            logging.warning('\nWebsite is currently unreachable;\nProgram has terminated.')
 
 
 if __name__ == "__main__":
