@@ -1,6 +1,5 @@
 import requests
 from bs4 import BeautifulSoup
-from datetime import date
 from datetime import datetime, timedelta
 import time
 import io
@@ -18,18 +17,13 @@ class InvestmentReport:
     def url_builder(self):
         """method prepares two url's of current date and last week's 
                 nasdaqomxbaltic trading session prices. Url's will be used for scraping"""
-        template_url1 = (
-            "http://www.nasdaqbaltic.com/market/?pg=mainlist&date=yyyy.mm.dd&lang=en"
-        )
-        date_of_today = str(date.today()).replace(
-            "-", "."
-        )  # pulling current date in format of 'yyy.mm.dd'
-        last_week_date = str(date.today() - timedelta(7)).replace(
-            "-", "."
-        )  # pulling last week's date in 'yyy.mm.dd'
+        template_url1 = ("http://www.nasdaqbaltic.com/market/?pg=mainlist&date=yyyy.mm.dd&lang=en")
+        # pulling dates for template url of today and last week:
+        self.date_of_today_string = datetime.now().strftime("%Y.%m.%d")
+        self.last_week_date_string = (datetime.now() - timedelta(7)).strftime("%Y.%m.%d")
         # two output URL's:
-        self.url_prices_today = template_url1.replace("yyyy.mm.dd", date_of_today)
-        self.url_prices_last_week = template_url1.replace("yyyy.mm.dd", last_week_date)
+        self.url_prices_today = template_url1.replace("yyyy.mm.dd", self.date_of_today_string)
+        self.url_prices_last_week = template_url1.replace("yyyy.mm.dd", self.last_week_date_string)
 
 
     def scrape_last_prices(self, url):
@@ -46,7 +40,7 @@ class InvestmentReport:
         # preparing output list:
         self.stock_closing_prices = []
 
-        for company in companies_rows):
+        for company in companies_rows:
             # temporary list for one company to be filled and appended to stock_closing_prices of lists.
             one_company_info = ["", "", ""]
             td_tag_within_company_row = company.findAll("td")
@@ -68,20 +62,23 @@ class InvestmentReport:
             # making list of lists:
             self.stock_closing_prices.append(one_company_info)
 
-        # using pandas to export list of lists to a csv file:
-        self.my_df = pd.DataFrame(self.stock_closing_prices)
-        # export_filenaname = 'nasdaq'+str(url)
-        self.my_df.to_csv(
-            "nasdaq_prices"+url[-18:]+".csv", index=False, header=False
-        )
+        #preparing csv file name:
+        if self.date_of_today_string in url:
+            self.csv_filename_prices = 'prices_' + self.date_of_today_string + '.csv'
+        elif self.last_week_date_string in url:
+            self.csv_filename_prices = 'prices_' + self.last_week_date_string + '.csv'
+
+        # creating a Pandas dataframe and exporting a csv:
+        self.prices = pd.DataFrame(self.stock_closing_prices)
+        self.prices.to_csv(self.csv_filename_prices, index=False, header=False)
 
 
     def performace_evaluation(self):
         '''method takes two csv files, and returns one excel file with two sheets of top and worst 5 (10 in total)
         performers. Method also returns two lists for potential further scraping of related companies announcements'''
         # reading csv data:
-        last_week_df = pd.read_csv('nasdaq_prices2018.12.11&lang=en.csv', names=['Company', 'Ticker', 'Last week price'])
-        today_df = pd.read_csv('nasdaq_prices2018.12.18&lang=en.csv', names=['Company', 'Ticker', 'Last price'])
+        last_week_df = pd.read_csv('prices_' + self.date_of_today_string + '.csv', names=['Company', 'Ticker', 'Last week price'])
+        today_df = pd.read_csv('prices_' + self.last_week_date_string + '.csv', names=['Company', 'Ticker', 'Last price'])
         data_from_last_week_df = last_week_df[['Ticker', 'Last week price']]
         data_from_today_df = today_df['Last price']
        
@@ -114,8 +111,6 @@ class InvestmentReport:
         #self.generate_report()
         # self.get_twitter()
         # url.builder()
-        # scrape_last_prices( url1 ...)
-        # generate_report
         # other methods required to generate a report
 
 
