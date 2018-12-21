@@ -1,122 +1,49 @@
 # Weekly Investment Report
 
-## Trumpas aprašymas:
+Scope of program exceeds the term of the Python Programming Course, therefore this desription is devided into "Current Program", "Future Development" and "Potential Program Extensions" sections.
 
-Weekly automatinis report script-generatorius su paruoštu stiliaus template (galbūt koks nors API, galbūt PY biblioteka) PDF formatu bei PNG formatais (content fb page/ twitter paskyroms)
+In short: Program should generate automated weekly content beneficial to investors of Baltic Region (Nasdaq OMX Baltic stock market). Report should be an excel template saved each week as a PNG or PDF file.
 
-
-## Duomenų šaltiniai:
+## Current and future data sources:
 
 - [Nasdaqomxbaltic](http://www.nasdaqomxbaltic.com)
-- excel failas-duombazė
+- excel database 'screener.xlsx' 
 
+## Current Program:
 
-## Report turinys: 
+### Installation
+Simply execute report_generator.py from any IDE. Be sure you have installed modules listed in requirements.txt
 
-- Top 5 best/worst performers of the week. Pvz:
+### Code Structure
 
-![pavyzdys](https://github.com/yomajo/myproject/blob/master/Images/pvz%20performers.JPG?raw=true "Pavyzdys")
+Program employs the benefits of Object Oriented Programming.
+Currently one class InvestmentReport is sufficient to cover the needs of the program.
 
-- Scrape related news from these performers.
-- savaitės uždarymo kainas supushinti į excel duombazę, ištraukti išrūšiuotas top 10 pagal pigumą (tam tikras pagal kainas apskaičiuotas rodiklis excel duombazėje)
-- pateikti selected santykinius rodiklius su naujausiomis penktadienio sesijos uždarymo kainomis.
-- įkalt disclaimer apačioj (static text)
+Class methods:
 
-## Potencialūs tobulinimai:
-- twitter boto kūrimas
-- ir šio reporto tweetinimas penktadienio vakarą
+- url_builder: takes template url ("http://www.nasdaqbaltic.com/market/?pg=mainlist&date=yyyy.mm.dd&lang=en") and creates two url's based on date. One Url is for prices of today's trading session (last prices), while the other, needed for comparisson url is from last week session.
+- server_response_checker: simply checks if nasdaqomxbaltic website is responding with 200 code. If not - program terminates.
+- scrape_last_prices: scrapes listed companies prices and outputs a csv file for the url passed in.
+- performance_evaluation: takes two csv files from different time-based url scrapes and outputs excel file with two sheets, that contains top and worst performers. Method also outputs the list of these companies tickers for future code implementations.
+- run: method simply combines program excecusion sequence. Method also has condition, and if server is not responding, further methods are not executed and logging.warning is retured to console.
 
+## Future Development
 
-## Kriterijai projektui:
+- Add excel screener handler. Enable rewrite of last prices, extraction of selected sorted metrics from one sheet.
+- create report_template.xlsx
+- insert top/worst performers, selected data from screener, other important metrics to report, plot graphs, output a PNG/PDF.
 
-- naudingumas
-- originalumas
-- testavimas
-- stilius
-- dokumentacija
-- versijų kontrolė
+## Potential Program Extensions:
+- Twitter bot
+
+## Criteria:
+
+- usability
+- originality
+- testing
+- style
+- documentation
+- version control
 - 'import this'
 
 Now get to `coding`.
-
-___
-
-## Program structure (*unfinished*)
-
-### stock_info_scraper.py Method "stock_closing_prices"
-
-Class employing BeautifulSoup library. Scrapes 
-
-Inputs:
-- initiation time
-- date for trading session we want the data from
-
-Output: 
-- three lists inside the list:
-
-`[ [company1, company2, ...], [company_ticker1, company_ticker2, ...], [closing_price1, closing_price2] ]`
-
-- handle list and export as csv/excel
-
-Source url:  http://www.nasdaqbaltic.com/market/?pg=mainlist&date=07.12.2018&lang=en
-
-### performance_evaluation.py
-
-Handles output from stock_closing_prices, compares to according list of previous period (week) and outputs two arrays of companies of best and worst performance over the last week.
-
-Input:
-- output from stock_closing_prices over two dates passed by datehander.py
-
-Output:
-- csv/excel two arrays of best and worst performing stocks over the last week (max percentage gain and worst percentage decline).
-
-
-### datehander.py
-
-datehander.py script tracks current time, puts it into perspective of current date. If current time is Friday 18:00, it calls for action, outputs two dates.
-
-Input:
-- current time
-
-Output:
-- handles initiation and excecusion of main project script that creates automated report.
-- current friday date
-- last friday date
-
-
-### stock_info_scraper.py Method "related_annoncements"
-Another Scraper Class method should have 10 companies as inputs from performance_evaluation.py module
-and scrape related news from these companies over the period (starting and ending date range) again defined
-by datehhandler.py
-
-Inputs:
-- 10 companies from performance_evaluation.py
-- date range from datehandler.py
-
-Output:
-- Hyperlink with Title as text and url to actual announcement on nasdaqomxbaltic.com
-
-Source url: http://www.nasdaqbaltic.com/market/?page=1&issuer=&market=&legal%5B0%5D=main&legal%5B1%5D=firstnorth&start=2018-11-01&end=2018-12-07&keyword=&pg=news&lang=en&currency=EUR&downloadcsv=0 
-
-### Screener (excel file) handler "screener_handler.py"
-
-Script takes closing prices of Friday's session of all listed companies, writes into certain sheet fresh prices, sorts table on the other sheet by certain criteria and outputs 5 companies based on it.
-
-Inputs:
-- output from stock_closing_prices scraper.
-
-Output:
-- list of five companies, and their corresponding EV/EBITDA ratio sorted from least to maximum.
-
-
-### Generating actual Report "report_generator.py"
-Takes all the required inputs, template excel file, fills the fields, and saves a new document in multiple formats.
-
-Inputs:
-- Template.xlsx
-- Output from datehandler.py, performance_evaluation.py, related_announcements and screener_handler.py
-
-Output:
-- Weekly Report file in PDF, JPEG.
-
-___
