@@ -75,14 +75,14 @@ class InvestmentReport:
 
         # creating a Pandas dataframe and exporting a csv:
         self.prices = pd.DataFrame(self.stock_closing_prices)
-        self.prices.to_csv(self.csv_filename_prices, index=False, header=False)
+        self.prices.to_csv('data/' + self.csv_filename_prices, index=False, header=False)
 
     def performace_evaluation(self):
         '''method takes two csv files, and returns one excel file with two sheets of top and worst 5 (10 in total)
         performers. Method also returns two lists for potential further scraping of related companies announcements'''
         # reading csv data:
-        last_week_df = pd.read_csv('prices_' + self.date_of_today_string + '.csv', names=['Company', 'Ticker', 'Last week price'])
-        today_df = pd.read_csv('prices_' + self.last_week_date_string + '.csv', names=['Company', 'Ticker', 'Last price'])
+        last_week_df = pd.read_csv('data/' + 'prices_' + self.date_of_today_string + '.csv', names=['Company', 'Ticker', 'Last week price'])
+        today_df = pd.read_csv('data/' + 'prices_' + self.last_week_date_string + '.csv', names=['Company', 'Ticker', 'Last price'])
         data_from_last_week_df = last_week_df[['Ticker', 'Last week price']]
         data_from_today_df = today_df['Last price']
        
@@ -95,7 +95,7 @@ class InvestmentReport:
         worst_performers = joint_df.sort_values(by='Change, %').drop(columns = ['Last week price', 'Last price']).head(5)
         
         # writing to a common excel file, different sheets:
-        writer = pd.ExcelWriter('Performance.xlsx')
+        writer = pd.ExcelWriter('data/Performance.xlsx')
         top_performers.to_excel(writer, sheet_name='Top performers', index=False)
         worst_performers.to_excel(writer, sheet_name='Worst Performers', index=False)
         writer.save()
@@ -120,5 +120,3 @@ class InvestmentReport:
 if __name__ == "__main__":
     gimme_report = InvestmentReport()
     gimme_report.run()
-
-
