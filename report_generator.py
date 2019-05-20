@@ -5,9 +5,12 @@ import pandas as pd
 import logging
 import csv
 import os
+from openpyxl import load_workbook
+
 
 logging.basicConfig(level=logging.DEBUG)
 
+TEMPLATE_PATH = 'data/Template.xlsx'
 REPORT_FORMAT = "png"
 
 def extract_company_name(td_tag_within_company_row):
@@ -111,20 +114,26 @@ class InvestmentReport:
         self.joint_df = pd.merge(data_from_last_week_df, data_from_today_df, on='Ticker')
         self.joint_df['Change, %'] = (self.joint_df['Last Price'] - self.joint_df['Last Week Price'])/self.joint_df['Last Week Price']
         
-    def df_to_excel(self):
-        '''Adjusts joint dataframe from form_join_dataframe(); Forms two dataframes and outputs them to Peformance.xlsx
-        that cointains two sheets: Top Performers & Worst Performers. Additionally - deletes unneccessary csv files'''
-        # top and worst performers from sorted merged dataframe:
-        top_performers = self.joint_df.sort_values(by='Change, %', ascending=False).drop(columns = ['Last Week Price', 'Last Price']).head(5)
-        worst_performers = self.joint_df.sort_values(by='Change, %').drop(columns = ['Last Week Price', 'Last Price']).head(5)
-        # writing results a common excel file, different sheets:
-        writer = pd.ExcelWriter('data/Performance.xlsx')
-        top_performers.to_excel(writer, sheet_name='Top Performers', index=False)
-        worst_performers.to_excel(writer, sheet_name='Worst Performers', index=False)
-        writer.save()
-        #delete csv files:
+    def get_best_worst_performers_df(self):
+        '''Forms two dataframes of best and worst companies by price performance, sorted accordingly'''
+        self.top_performers = self.joint_df.sort_values(by='Change, %', ascending=False).drop(columns = ['Last Week Price', 'Last Price']).head(5)
+        self.worst_performers = self.joint_df.sort_values(by='Change, %').drop(columns = ['Last Week Price', 'Last Price']).head(5)
+
+    def Load_data_to_template_excel(self):
+        '''Loads dataframes to pre-made Template.xlsx'''
+        book = load_workbook(TEMPLATE_PATH)
+        with pd.ExcelWriter(TEMPLATE_PATH, engine='openpyxl') as writer:
+            writer.book = book
+            writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+            self.top_performers.to_excel(writer, index=False, header = False, startrow = 1, sheet_name = 'Main')
+            self.worst_performers.to_excel(writer, index=False, header = False, startrow = 7, sheet_name = 'Main')
+            writer.save()
+    
+    def clean_temp_files(self):
+        '''Cleans unneccessary files after program has finished'''
         os.remove(self.today_csv_filename)
         os.remove(self.last_week_csv_filename)
+
 
     def run(self):
         self.server_response_checker()
@@ -138,11 +147,14 @@ class InvestmentReport:
             logging.debug("2 csv files were created in /data folder")
             self.form_joint_dataframe()
             logging.debug("Joint dataframe was created")
-            self.df_to_excel()
-            logging.debug("data/Performance.xlsx has been created; temporary csv files have been deleted")
+            self.get_best_worst_performers_df()
+            logging.debug("Two dataframes of best and worst performing stocks formed")
+            self.Load_data_to_template_excel()
+            logging.debug("All desired data loaded to Template.xlsx")
+            self.clean_temp_files()
+            logging.debug("Temporary csv files have been deleted")
         else:
             logging.warning('\nWebsite is currently unreachable;\nProgram has terminated.')
-
 
 if __name__ == "__main__":
     gimme_report = InvestmentReport()

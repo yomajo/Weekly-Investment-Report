@@ -1,6 +1,7 @@
 #files neccessary for development of project
 Screener/
 Jupyter files/
+data/backup
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
