@@ -1,5 +1,6 @@
 #files neccessary for development of project
 data/
+Jupyter files/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
