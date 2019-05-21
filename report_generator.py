@@ -5,14 +5,16 @@ import pandas as pd
 import logging
 import csv
 import os
-from openpyxl import load_workbook
+import openpyxl
 
-
+#LOGGING SETTINGS:
 logging.basicConfig(level=logging.DEBUG)
 
+#GLOBAL VARIABLES
 TEMPLATE_PATH = 'data/Template.xlsx'
 REPORT_FORMAT = "png"
 
+#PUBLIC FUNCTIONS USED IN SCRAPPER
 def extract_company_name(td_tag_within_company_row):
     company_name = td_tag_within_company_row[0].text
     return company_name
@@ -53,7 +55,7 @@ class InvestmentReport:
         self.soup = BeautifulSoup(r.text, features='lxml')
 
     def get_rows_containing_data(self):
-        '''Extracts rows containing actual companies data'''
+        '''Extracts rows containing actual companies data (containing attribute selector "id" in HTML)'''
         rows_containers = self.soup.find_all("tr")
         self.companies_rows = []
         for i in rows_containers:
@@ -120,11 +122,15 @@ class InvestmentReport:
         self.worst_performers = self.joint_df.sort_values(by='Change, %').drop(columns = ['Last Week Price', 'Last Price']).head(5)
 
     def Load_data_to_template_excel(self):
-        '''Loads dataframes to pre-made Template.xlsx'''
-        book = load_workbook(TEMPLATE_PATH)
+        '''Loads dataframes, variables to pre-made Template.xlsx, without modifying the rest
+        of the document. Saves changes'''
+        wb = openpyxl.load_workbook(TEMPLATE_PATH)
+        ws = wb['Main']
+        ws['B18'] = self.date_of_today_string
+        ws['B19'] = self.last_week_date_string
         with pd.ExcelWriter(TEMPLATE_PATH, engine='openpyxl') as writer:
-            writer.book = book
-            writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+            writer.book = wb
+            writer.sheets = dict((ws.title, ws) for ws in wb.worksheets)
             self.top_performers.to_excel(writer, index=False, header = False, startrow = 1, sheet_name = 'Main')
             self.worst_performers.to_excel(writer, index=False, header = False, startrow = 7, sheet_name = 'Main')
             writer.save()
