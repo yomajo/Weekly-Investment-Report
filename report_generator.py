@@ -6,13 +6,14 @@ import logging
 import csv
 import os
 import openpyxl
+import excel2img
 
 #LOGGING SETTINGS:
 logging.basicConfig(level=logging.DEBUG)
 
 #GLOBAL VARIABLES
 TEMPLATE_PATH = 'data/Template.xlsx'
-REPORT_FORMAT = "png"
+REPORT_FORMAT = '.png'
 
 #PUBLIC FUNCTIONS USED IN SCRAPPER
 def extract_company_name(td_tag_within_company_row):
@@ -140,6 +141,11 @@ class InvestmentReport:
         os.remove(self.today_csv_filename)
         os.remove(self.last_week_csv_filename)
 
+    def generate_output(self):
+        '''Generates desired image file from Template\'s named range'''
+        self.report_file_name = 'Report '+self.date_of_today_string + REPORT_FORMAT
+        excel2img.export_img(TEMPLATE_PATH, 'data/' + self.report_file_name, None, 'Output_Area')
+
 
     def run(self):
         self.server_response_checker()
@@ -159,8 +165,11 @@ class InvestmentReport:
             logging.debug("All desired data loaded to Template.xlsx")
             self.clean_temp_files()
             logging.debug("Temporary csv files have been deleted")
+            self.generate_output()
+            logging.debug('Report named: "'+ self.report_file_name + '" is created in data/ folder')
         else:
             logging.warning('\nWebsite is currently unreachable;\nProgram has terminated.')
+
 
 if __name__ == "__main__":
     gimme_report = InvestmentReport()
