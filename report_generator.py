@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG)
 #GLOBAL VARIABLES
 TEMPLATE_PATH = 'data/Template.xlsx'
 REPORT_FORMAT = '.png'
-TEMPLATE_URL1 = ("http://www.nasdaqbaltic.com/market/?pg=mainlist&date=yyyy.mm.dd&lang=en")
+TEMPLATE_URL1 = 'http://www.nasdaqbaltic.com/market/?pg=mainlist&date=yyyy.mm.dd&lang=en'
 
 #PUBLIC FUNCTIONS USED IN SCRAPPER
 def extract_company_name(td_tag_within_company_row):
@@ -42,14 +42,11 @@ class InvestmentReport:
         self.server_response = r_check.status_code
     
     def url_builder(self):
-        """method prepares two url's of current date and last week's 
-        nasdaqomxbaltic trading session prices. Url's will be used for scraping"""
+        """Prepares two url's of current date and last week's 
+        nasdaqomxbaltic trading session equity list prices. Url's will be used for testing & scraping"""
         # pulling dates for template url of today and last week:
-        # For testing purposes
-        self.date_of_today_string = '2019.04.12'
-        self.last_week_date_string = '2019.04.05'
-        # self.date_of_today_string = datetime.now().strftime("%Y.%m.%d")
-        # self.last_week_date_string = (datetime.now() - timedelta(7)).strftime("%Y.%m.%d")
+        self.date_of_today_string = datetime.now().strftime("%Y.%m.%d")
+        self.last_week_date_string = (datetime.now() - timedelta(7)).strftime("%Y.%m.%d")
         # two output URL's:
         self.url_prices_today = TEMPLATE_URL1.replace("yyyy.mm.dd", self.date_of_today_string)
         self.url_prices_last_week = TEMPLATE_URL1.replace("yyyy.mm.dd", self.last_week_date_string)
