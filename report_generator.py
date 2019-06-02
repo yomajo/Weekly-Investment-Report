@@ -6,6 +6,7 @@ import logging
 import csv
 import os
 import openpyxl
+import xlwings as xw
 import excel2img
 
 #LOGGING SETTINGS:
@@ -14,6 +15,7 @@ logging.basicConfig(level=logging.DEBUG)
 #GLOBAL VARIABLES
 TEMPLATE_PATH = 'data/Template.xlsx'
 REPORT_FORMAT = '.png'
+TEMPLATE_URL1 = ("http://www.nasdaqbaltic.com/market/?pg=mainlist&date=yyyy.mm.dd&lang=en")
 
 #PUBLIC FUNCTIONS USED IN SCRAPPER
 def extract_company_name(td_tag_within_company_row):
@@ -42,13 +44,15 @@ class InvestmentReport:
     def url_builder(self):
         """method prepares two url's of current date and last week's 
         nasdaqomxbaltic trading session prices. Url's will be used for scraping"""
-        template_url1 = ("http://www.nasdaqbaltic.com/market/?pg=mainlist&date=yyyy.mm.dd&lang=en")
         # pulling dates for template url of today and last week:
-        self.date_of_today_string = datetime.now().strftime("%Y.%m.%d")
-        self.last_week_date_string = (datetime.now() - timedelta(7)).strftime("%Y.%m.%d")
+        # For testing purposes
+        self.date_of_today_string = '2019.04.12'
+        self.last_week_date_string = '2019.04.05'
+        # self.date_of_today_string = datetime.now().strftime("%Y.%m.%d")
+        # self.last_week_date_string = (datetime.now() - timedelta(7)).strftime("%Y.%m.%d")
         # two output URL's:
-        self.url_prices_today = template_url1.replace("yyyy.mm.dd", self.date_of_today_string)
-        self.url_prices_last_week = template_url1.replace("yyyy.mm.dd", self.last_week_date_string)
+        self.url_prices_today = TEMPLATE_URL1.replace("yyyy.mm.dd", self.date_of_today_string)
+        self.url_prices_last_week = TEMPLATE_URL1.replace("yyyy.mm.dd", self.last_week_date_string)
 
     def get_prices_soup(self, url):
         '''Creates a soup from url'''
@@ -135,16 +139,36 @@ class InvestmentReport:
             self.top_performers.to_excel(writer, index=False, header = False, startrow = 1, sheet_name = 'Main')
             self.worst_performers.to_excel(writer, index=False, header = False, startrow = 7, sheet_name = 'Main')
             writer.save()
-    
+
+    def remove_chart_outline(self):
+        '''Copies template sheet to xlsm and removes chart outline via VBA script'''
+        self.temp_TEMPLATE_PATH = TEMPLATE_PATH.replace('xlsx', 'xlsm')
+        #Creating temp xlsxm empty workbook + macro
+        writer = pd.ExcelWriter(TEMPLATE_PATH, engine='xlsxwriter')
+        wb = writer.book
+        wb.filename = self.temp_TEMPLATE_PATH
+        wb.add_vba_project('data/vbaProject.bin')
+        writer.save()
+        #Opens temp xlsm workbook and executes VBA script to copy data, formats, charts and REMOVE CHART OUTLINE 
+        wb = xw.Book(self.temp_TEMPLATE_PATH)
+        app = wb.app
+        macro_vba = app.macro('Loader')
+        macro_vba()
+        wb.save()
+        wb.close()
+        app.quit()
+
+    def generate_output(self):
+        '''Generates desired image file from Template's named range'''
+        self.report_file_name = 'Report '+self.date_of_today_string + REPORT_FORMAT
+        #Generate output image - report:
+        excel2img.export_img(self.temp_TEMPLATE_PATH, 'data/' + self.report_file_name, None, 'Output_Area')
+
     def clean_temp_files(self):
         '''Cleans unneccessary files after program has finished'''
         os.remove(self.today_csv_filename)
         os.remove(self.last_week_csv_filename)
-
-    def generate_output(self):
-        '''Generates desired image file from Template\'s named range'''
-        self.report_file_name = 'Report '+self.date_of_today_string + REPORT_FORMAT
-        excel2img.export_img(TEMPLATE_PATH, 'data/' + self.report_file_name, None, 'Output_Area')
+        os.remove(self.temp_TEMPLATE_PATH)
 
 
     def run(self):
@@ -163,10 +187,12 @@ class InvestmentReport:
             logging.debug("Two dataframes of best and worst performing stocks formed")
             self.Load_data_to_template_excel()
             logging.debug("All desired data loaded to Template.xlsx")
+            self.remove_chart_outline()
+            logging.debug("temp xlsm file ready to be passed for image processing")
+            self.generate_output()
+            logging.debug("Report named: "'+ self.report_file_name + '" is created in data/ folder")
             self.clean_temp_files()
             logging.debug("Temporary csv files have been deleted")
-            self.generate_output()
-            logging.debug('Report named: "'+ self.report_file_name + '" is created in data/ folder')
         else:
             logging.warning('\nWebsite is currently unreachable;\nProgram has terminated.')
 
