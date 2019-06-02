@@ -16,20 +16,26 @@ logging.basicConfig(level=logging.DEBUG)
 TEMPLATE_PATH = 'data/Template.xlsx'
 REPORT_FORMAT = '.png'
 TEMPLATE_URL1 = 'http://www.nasdaqbaltic.com/market/?pg=mainlist&date=yyyy.mm.dd&lang=en'
+DATE_OF_TODAY = datetime.now()
+DATE_OF_LAST_WEEK = datetime.now() - timedelta(7)
 
-#PUBLIC FUNCTIONS USED IN SCRAPPER
+#PUBLIC FUNCTIONS
 def extract_company_name(td_tag_within_company_row):
     company_name = td_tag_within_company_row[0].text
     return company_name
 
 def extract_company_ticker(td_tag_within_company_row):
     ticker = td_tag_within_company_row[1].text
-    ticker = ticker.replace("\xa0", "")
+    ticker = ticker.replace('\xa0', '')
     return ticker
 
 def extract_last_price(td_tag_within_company_row):
     last_price = td_tag_within_company_row[4].text
     return last_price
+
+def subtract_day(date):
+    shifted_date = date - timedelta(1)
+    return shifted_date
 
 class InvestmentReport:
     def __init__(self):
@@ -40,28 +46,58 @@ class InvestmentReport:
         nasdaqomxbaltic_home_url = 'http://www.nasdaqbaltic.com/market/?lang=en'
         r_check = requests.get(nasdaqomxbaltic_home_url)
         self.server_response = r_check.status_code
-    
-    def url_builder(self):
-        """Prepares two url's of current date and last week's 
-        nasdaqomxbaltic trading session equity list prices. Url's will be used for testing & scraping"""
-        # pulling dates for template url of today and last week:
-        self.date_of_today_string = datetime.now().strftime("%Y.%m.%d")
-        self.last_week_date_string = (datetime.now() - timedelta(7)).strftime("%Y.%m.%d")
-        # two output URL's:
-        self.url_prices_today = TEMPLATE_URL1.replace("yyyy.mm.dd", self.date_of_today_string)
-        self.url_prices_last_week = TEMPLATE_URL1.replace("yyyy.mm.dd", self.last_week_date_string)
 
+    def trading_days_checker(self):
+        '''method checks if nasdaq website provides trading data for desired dates
+        if not - iterates until combination of dates is found, that provides desired data for report'''      
+        self.date_of_today = DATE_OF_TODAY
+        self.date_of_last_week = DATE_OF_LAST_WEEK
+        self.url_builder()
+        iteration = 0
+        while self.soups_contain_errors(self.url_prices_today, self.url_prices_last_week) == False: 
+            iteration += 1
+            self.date_of_today = subtract_day(self.date_of_today)
+            self.date_of_last_week = subtract_day(self.date_of_last_week)
+            self.url_builder()
+            logging.debug('URL checking iteration no: ' + str(iteration))
+        logging.debug('Found working URLs at interation no: ' + str(iteration))
+        logging.debug('Program proceeds with these URLs: ' + self.url_prices_today + ' and ' + self.url_prices_last_week)
+ 
+    def url_builder(self):
+        '''Prepares two url's of current date and last week's 
+        nasdaqomxbaltic trading session equity list prices. Url's will be used for testing & scraping'''
+        #string preparation
+        self.date_of_today_string = self.date_of_today.strftime('%Y.%m.%d')
+        self.last_week_date_string = self.date_of_last_week.strftime('%Y.%m.%d')
+        # two output URL's:
+        self.url_prices_today = TEMPLATE_URL1.replace('yyyy.mm.dd', self.date_of_today_string)
+        self.url_prices_last_week = TEMPLATE_URL1.replace('yyyy.mm.dd', self.last_week_date_string)
+
+    def soups_contain_errors(self, url1, url2):
+        '''Takes two passed urls (as string arguments), checks and returns True if both soups contain
+        desired data for report generation. Returned Boolean is evaluated in trading_days_checker() method'''
+        r1 = requests.get(url1)
+        r2 = requests.get(url2)
+        soup1 = BeautifulSoup(r1.text, features='lxml')
+        soup2 = BeautifulSoup(r2.text, features='lxml')
+        if soup1.find('p', 'errorMsg') == None and soup2.find('p', 'errorMsg') == None:
+            logging.debug('Both provided urls contain data, allowing to proceed with the program')
+            return True
+        else:
+            logging.debug('One these URLs was invalid for data collection: ' + url1 + ' or ' + url1)
+            return False
+    
     def get_prices_soup(self, url):
         '''Creates a soup from url'''
         r = requests.get(url)
         self.soup = BeautifulSoup(r.text, features='lxml')
 
     def get_rows_containing_data(self):
-        '''Extracts rows containing actual companies data (containing attribute selector "id" in HTML)'''
-        rows_containers = self.soup.find_all("tr")
+        '''Extracts rows containing actual companies data (containing attribute selector 'id' in HTML)'''
+        rows_containers = self.soup.find_all('tr')
         self.companies_rows = []
         for i in rows_containers:
-            if i.has_attr("id"):
+            if i.has_attr('id'):
                 self.companies_rows.append(i)
         
     def get_scrape_results(self):
@@ -71,7 +107,7 @@ class InvestmentReport:
         #iterating through companies to collect data:
         for company in self.companies_rows:
             temp_d = {}
-            td_tag_within_company_row = company.findAll("td")
+            td_tag_within_company_row = company.findAll('td')
             temp_d['Name'] = extract_company_name(td_tag_within_company_row)
             temp_d['Ticker'] = extract_company_ticker(td_tag_within_company_row)
             temp_d['Last Price'] = extract_last_price(td_tag_within_company_row)
@@ -88,7 +124,7 @@ class InvestmentReport:
         elif self.last_week_date_string in url:
             self.temp_csv_filename = self.last_week_csv_filename
         else:
-            logging.debug("Faulty URL passed to function")
+            logging.debug('Faulty URL passed to function')
 
     def export_scrape_results_csv(self):
         keys = self.scrape_output[0].keys()
@@ -109,8 +145,8 @@ class InvestmentReport:
 
     def form_joint_dataframe(self):
         '''Takes two csv files, cleans data and merges to joint dataframe. Calculates additional column ['Change, %']'''
-        last_week_df = pd.read_csv(self.last_week_csv_filename, header = 0, encoding = "ISO-8859-1", names=['Name', 'Ticker', 'Last Week Price'])
-        today_df = pd.read_csv(self.today_csv_filename, header = 0, encoding = "ISO-8859-1", names=['Name', 'Ticker', 'Last Price'])
+        last_week_df = pd.read_csv(self.last_week_csv_filename, header = 0, encoding = 'ISO-8859-1', names=['Name', 'Ticker', 'Last Week Price'])
+        today_df = pd.read_csv(self.today_csv_filename, header = 0, encoding = 'ISO-8859-1', names=['Name', 'Ticker', 'Last Price'])
         #trimming dataframes:
         data_from_last_week_df = last_week_df[['Ticker', 'Last Week Price']]
         data_from_today_df = today_df[['Ticker', 'Last Price']]
@@ -171,29 +207,28 @@ class InvestmentReport:
     def run(self):
         self.server_response_checker()
         if self.server_response == 200:
-            self.url_builder()
-            logging.debug("URL's prepared")
-            logging.debug("About to scrape this URL: " + self.url_prices_today)
+            self.trading_days_checker()
+            logging.debug('Found a set of trading days; built URLs for scrapping')
             self.scrape_to_csv(self.url_prices_today)
-            logging.debug("About to scrape another URL: " + self.url_prices_last_week)
+            logging.debug('About to scrape another URL: ' + self.url_prices_last_week)
             self.scrape_to_csv(self.url_prices_last_week)
-            logging.debug("2 csv files were created in /data folder")
+            logging.debug('2 csv files were created in /data folder')
             self.form_joint_dataframe()
-            logging.debug("Joint dataframe was created")
+            logging.debug('Joint dataframe was created')
             self.get_best_worst_performers_df()
-            logging.debug("Two dataframes of best and worst performing stocks formed")
+            logging.debug('Two dataframes of best and worst performing stocks formed')
             self.Load_data_to_template_excel()
-            logging.debug("All desired data loaded to Template.xlsx")
+            logging.debug('All desired data loaded to Template.xlsx')
             self.remove_chart_outline()
-            logging.debug("temp xlsm file ready to be passed for image processing")
+            logging.debug('temp xlsm file ready to be passed for image processing')
             self.generate_output()
-            logging.debug("Report named: "'+ self.report_file_name + '" is created in data/ folder")
+            logging.debug('Report named: ' + self.report_file_name + ' is created in data/ folder')
             self.clean_temp_files()
-            logging.debug("Temporary csv files have been deleted")
+            logging.debug('Temporary files have been deleted')
         else:
             logging.warning('\nWebsite is currently unreachable;\nProgram has terminated.')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     gimme_report = InvestmentReport()
     gimme_report.run()
