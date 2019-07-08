@@ -159,7 +159,7 @@ class InvestmentReport:
         self.top_performers = self.joint_df.sort_values(by='Change, %', ascending=False).drop(columns = ['Last Week Price', 'Last Price']).head(5)
         self.worst_performers = self.joint_df.sort_values(by='Change, %').drop(columns = ['Last Week Price', 'Last Price']).head(5)
 
-    def Load_data_to_template_excel(self):
+    def load_data_to_template_excel(self):
         '''Loads dataframes, variables to pre-made Template.xlsx, without modifying the rest
         of the document. Saves changes'''
         wb = openpyxl.load_workbook(TEMPLATE_PATH)
@@ -217,18 +217,17 @@ class InvestmentReport:
             logging.debug('Joint dataframe was created')
             self.get_best_worst_performers_df()
             logging.debug('Two dataframes of best and worst performing stocks formed')
-            self.Load_data_to_template_excel()
+            self.load_data_to_template_excel()
             logging.debug('All desired data loaded to Template.xlsx')
             self.remove_chart_outline()
             logging.debug('temp xlsm file ready to be passed for image processing')
             self.generate_output()
             logging.debug('Report named: ' + self.report_file_name + ' is created in data/ folder')
-            self.clean_temp_files()
-            logging.debug('Temporary files have been deleted')
+            # self.clean_temp_files()
+            # logging.debug('Temporary files have been deleted')
         else:
             logging.warning('\nWebsite is currently unreachable;\nProgram has terminated.')
 
 
 if __name__ == '__main__':
-    gimme_report = InvestmentReport()
-    gimme_report.run()
+    InvestmentReport().run()

@@ -4,15 +4,18 @@ from shutil import copy
 import openpyxl
 import csv
 import random 
+import xlwings as xw
+import pandas as pd
 
 #LOGGING SETTINGS:
 logging.basicConfig(level=logging.DEBUG)
 
 #GLOBAL VARIABLES
 #Note, that due to sensitive information inside screener it is not publicly available
-SCREENER_ABS_PATH = 'C:/Svarbu/OMXB analitika.xlsm'
-SCREENER_FILENAME = SCREENER_ABS_PATH.split('/')[-1]
-SRC_DIR = '/'.join(SCREENER_ABS_PATH.split('/')[:-1])
+SCREENER_ORIGINAL_ABS_PATH = 'C:/Svarbu/OMXB analitika.xlsm'
+SCREENER_FILENAME = SCREENER_ORIGINAL_ABS_PATH.split('/')[-1]
+SCREENER_FILENAME_PATH = 'data/' + SCREENER_FILENAME
+SRC_DIR = '/'.join(SCREENER_ORIGINAL_ABS_PATH.split('/')[:-1])
 
 class Screener:
     def __init__(self):
@@ -40,13 +43,13 @@ class Screener:
                 except:
                     self.ticker_price_dict[csv_line[1]] = csv_line[2]
     
-    def open_screener(self):
+    def open_screener(self, rel_path):
         '''Trying to manipulate fresh copy of xlsm file'''
-        logging.debug('Opening worksheet {}'.format('data/' + SCREENER_FILENAME))
+        logging.debug('Opening worksheet {}'.format(rel_path))
         # Limitation of openpyxl about loosing formulas or being unable to read cell contents where formulas are present
         # Workaround: open two sessions in different modes; one for reading, another for writing
-        self.wb = openpyxl.load_workbook('data/' + SCREENER_FILENAME)
-        self.wb_read = openpyxl.load_workbook('data/' + SCREENER_FILENAME, data_only=True)
+        self.wb = openpyxl.load_workbook(rel_path, keep_vba=True)
+        self.wb_read = openpyxl.load_workbook(rel_path, data_only=True, keep_vba=True)
 
     def load_new_prices(self):
         '''Editing inside copy of excel screener'''
@@ -56,7 +59,6 @@ class Screener:
         for cell in ws['E']:
             if cell.value == 'Last':
                 self.input_range_row = cell.row
-                logging.debug(f'Price uploading should start at row number: {self.input_range_row}')
                 break
 
         self.count_uploaded = 0
@@ -75,7 +77,7 @@ class Screener:
         logging.debug('Additinal cell values have been set in Summary sheet C1:C2 with values {} and {}'.format(self.wb['Universals']['E18'].value, ws['X1'].value))
 
     def get_available_ratios(self):
-        '''Get a collection of ratios available in the screener'''
+        '''Get a collection of ratios available in the screener as dict'''
         ws = self.wb_read['Summary']
         self.ratios_dict = {}
         # Starting location of ratios and their categories in Summary sheet defined by start_row_col tuple
@@ -97,37 +99,100 @@ class Screener:
                         break
 
     def pick_random_values_for_sorting(self):
-        '''outputs three randomly picked values: 1. ratio category 2. ratio 3. True/False boolean for accending/descending sorting'''
+        '''Outputs three randomly picked values: 1. ratio category 2. ratio 3. True/False boolean for accending/descending sorting'''
         self.random_ratio_category = random.choice(list(self.ratios_dict))
         self.random_ratio = random.choice(self.ratios_dict[self.random_ratio_category])
         self.random_boolean = random.choice([True, False])
+        logging.debug(f'Random selection. Ratio category: {self.random_ratio_category}, ratio within category: {self.random_ratio}, ascending sorting: {self.random_boolean}')
 
+    def get_current_screener_table_headers(self):
+        '''Get list of current screener table headers'''
+        ws = self.wb['Summary']
+        self.current_headers_list = []
+        for c in range(1, 18):
+            self.current_headers_list.append(ws.cell(row = 4, column = c).value)
+
+    def push_ratio_to_screener_table(self, ratio_category, ratio):
+        '''Takes arguments of ratio category, ratio. If ratio is not in table headers already.
+        Method writes it to screener table header, ensuring corresponding data is present before reading it'''
+        ws = self.wb['Summary']
+        self.get_current_screener_table_headers()
+        # Iterating through ratio categories in table upper headings to write random ratio to headers IF it does already exist in headers list 
+        if self.random_ratio not in self.current_headers_list:
+            for col in range(5, ws.max_column):
+                if ws.cell(row=3, column=col).value == ratio_category:
+                    ws.cell(row=4, column=col).value = ratio
+                    break
+        else:
+            logging.debug(f'Randomly picked ratio {self.random_ratio} already exists in the headers list, no additional values were pushed into workbook')
+            pass
+
+    def recalculate_workbook(self, file_path):
+        '''Opening workbook with xlwings to evaluate the formulas'''
+        app = xw.App(visible=False)
+        book = xw.Book(file_path)
+        book.save(file_path)
+        book.close()
+        app.quit()
+    
+    def table_to_df(self):
+        '''Returns Pandas dataframe formed from screener table'''
+        ws_read = self.wb_read['Summary']
+        table_start_row_col = (4, 1)
+        screener_table_data_rows = []
+        for r in range(table_start_row_col[0], ws_read.max_row):
+            screener_table_data_cols = []
+            if ws_read[f'E{r}'].value != None:
+                for c in range(table_start_row_col[1], 18):
+                    screener_table_data_cols.append(ws_read.cell(row=r, column=c).value)
+                screener_table_data_rows.append(screener_table_data_cols)
+            else:
+                break
+        
+        self.headers = screener_table_data_rows.pop(0)
+        self.df = pd.DataFrame(screener_table_data_rows, columns=self.headers)
+        
+    def crop_sort_df(self):
+        '''Crops, sorts and formats original dataframe to top/bottom by random ratio picked before'''    
+        cropped_df = self.df[[self.headers[1], self.random_ratio]]
+        self.sorted_cropped_df = cropped_df.sort_values(by=[self.random_ratio], ascending=self.random_boolean).head(5)
+    
     def close_screener(self):
-        '''saves a separate copy of screener and closes workbook'''
-        self.wb.save('data/' + 'OMXB analitika.xlsx')
+        '''Saves screener and closes workbook'''
+        logging.debug('Saving & Closing...')
+        self.wb.save(SCREENER_FILENAME_PATH)
         self.wb.close()
         self.wb_read.close()
-        logging.debug('All of the above operations performed are visible in newly created: {}'.format('OMXB analitika.xlsx'))
-        logging.debug('Finished')
 
 
     def run(self):
-        if self.screener_exists(SCREENER_ABS_PATH) == True:
-            logging.debug('Screener {} found'.format(SCREENER_FILENAME))
-            self.make_temp_screener_copy(SCREENER_ABS_PATH)
-            logging.debug('Screener {} copy created in {} folder'.format(SCREENER_FILENAME, '/data'))
-            # 
-            self.open_screener()
+        if self.screener_exists(SCREENER_ORIGINAL_ABS_PATH) == True:
+            logging.debug(f'Screener {SCREENER_FILENAME} found')
+            self.make_temp_screener_copy(SCREENER_ORIGINAL_ABS_PATH)
+            logging.debug(f'Screener copy was created: {SCREENER_FILENAME_PATH}')
+            self.open_screener(SCREENER_FILENAME_PATH)
             self.last_price_csv_to_dict('Prices.csv')
             self.load_new_prices()
             self.use_latest_values()
             self.get_available_ratios()
             self.pick_random_values_for_sorting()
-
+            logging.debug('Getting current headers list')
+            self.push_ratio_to_screener_table(self.random_ratio_category, self.random_ratio)
+            logging.debug(f'Closing workbook {SCREENER_FILENAME}')
             self.close_screener()
-            # 
+            logging.debug(f'Opening, calculating and saving workbook {SCREENER_FILENAME} via hidden excel instance using xlwings')
+            self.recalculate_workbook(SCREENER_FILENAME_PATH)
+            logging.debug('Reloading workbook on openpyxl')
+            self.open_screener(SCREENER_FILENAME_PATH)
+            self.table_to_df()
+            self.crop_sort_df()
+            
+            print(self.sorted_cropped_df)
+            
+            self.close_screener()
         else:
-            logging.warning(' PROGRAM TERMINATED. \n Please check directory: {} \n File named {} was not found there.'.format(SRC_DIR, SCREENER_FILENAME))
+            logging.warning(f' PROGRAM TERMINATED. \n Please check directory: {SRC_DIR} \n File named {SCREENER_FILENAME} was not found there.')
+        logging.debug('--------FINISHED--------')
         
 if __name__ == '__main__':
     Screener().run()
