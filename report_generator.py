@@ -1,3 +1,5 @@
+import screener_handler
+# from screener_handler import Screener, Screener_instance
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
@@ -159,6 +161,13 @@ class InvestmentReport:
         self.top_performers = self.joint_df.sort_values(by='Change, %', ascending=False).drop(columns = ['Last Week Price', 'Last Price']).head(5)
         self.worst_performers = self.joint_df.sort_values(by='Change, %').drop(columns = ['Last Week Price', 'Last Price']).head(5)
 
+    def get_data_from_screener(self, csvfilename):
+        '''Takes argument of csvfile path and writes dataframe returned by screener_handler.py module\'s method run as variable'''
+        imported_list = screener_handler.Screener_instance.run(self.today_csv_filename)
+        self.random_ratio = imported_list[0]
+        self.df_from_screener = imported_list[1]
+        # self.df_from_screener = Screener_instance.run(self.today_csv_filename)
+        
     def load_data_to_template_excel(self):
         '''Loads dataframes, variables to pre-made Template.xlsx, without modifying the rest
         of the document. Saves changes'''
@@ -199,6 +208,7 @@ class InvestmentReport:
 
     def clean_temp_files(self):
         '''Cleans unneccessary files after program has finished'''
+        os.remove(screener_handler.SCREENER_FILENAME_PATH)
         os.remove(self.today_csv_filename)
         os.remove(self.last_week_csv_filename)
         os.remove(self.temp_TEMPLATE_PATH)
@@ -210,21 +220,24 @@ class InvestmentReport:
             self.trading_days_checker()
             logging.debug('Found a set of trading days; built URLs for scrapping')
             self.scrape_to_csv(self.url_prices_today)
-            logging.debug('About to scrape another URL: ' + self.url_prices_last_week)
+            logging.debug(f'About to scrape another URL: {self.url_prices_last_week}')
             self.scrape_to_csv(self.url_prices_last_week)
             logging.debug('2 csv files were created in /data folder')
             self.form_joint_dataframe()
             logging.debug('Joint dataframe was created')
             self.get_best_worst_performers_df()
             logging.debug('Two dataframes of best and worst performing stocks formed')
+            logging.debug(f'Querying Screener class, passing fresh stock prices: {self.today_csv_filename}')            
+            self.get_data_from_screener(self.today_csv_filename)
             self.load_data_to_template_excel()
             logging.debug('All desired data loaded to Template.xlsx')
             self.remove_chart_outline()
             logging.debug('temp xlsm file ready to be passed for image processing')
             self.generate_output()
-            logging.debug('Report named: ' + self.report_file_name + ' is created in data/ folder')
-            # self.clean_temp_files()
-            # logging.debug('Temporary files have been deleted')
+            logging.debug(f'Report named: {self.report_file_name} is created in data/ folder')
+
+            self.clean_temp_files()
+            logging.debug('Temporary files have been deleted.\n---------------Program finished executing---------------')
         else:
             logging.warning('\nWebsite is currently unreachable;\nProgram has terminated.')
 

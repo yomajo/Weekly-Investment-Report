@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from shutil import copy
 import openpyxl
 import csv
@@ -32,7 +33,7 @@ class Screener:
 
     def last_price_csv_to_dict(self, csvfilename):
         '''Takes argument of csv filename as a string. Method creates dictionary of company ticker as key and last price as value'''
-        with open('data/' + csvfilename) as csv_file:
+        with open(csvfilename) as csv_file:
             csv_reader = csv.reader(csv_file)
             #skipping header row
             next (csv_reader)
@@ -128,7 +129,7 @@ class Screener:
             pass
 
     def recalculate_workbook(self, file_path):
-        '''Opening workbook with xlwings to evaluate the formulas'''
+        '''Opening workbook with xlwings as hidden instance to evaluate the formulas'''
         app = xw.App(visible=False)
         book = xw.Book(file_path)
         book.save(file_path)
@@ -148,7 +149,7 @@ class Screener:
                 screener_table_data_rows.append(screener_table_data_cols)
             else:
                 break
-        
+        # Converting list to dataframe
         self.headers = screener_table_data_rows.pop(0)
         self.df = pd.DataFrame(screener_table_data_rows, columns=self.headers)
         
@@ -157,6 +158,10 @@ class Screener:
         cropped_df = self.df[[self.headers[1], self.random_ratio]]
         self.sorted_cropped_df = cropped_df.sort_values(by=[self.random_ratio], ascending=self.random_boolean).head(5)
     
+    def form_export_data_list(self):
+        '''Forms a list of selected random ratio and a dataframe created by Screener class to be returned'''
+        self.export_list = [self.random_ratio, self.sorted_cropped_df]
+    
     def close_screener(self):
         '''Saves screener and closes workbook'''
         logging.debug('Saving & Closing...')
@@ -164,14 +169,14 @@ class Screener:
         self.wb.close()
         self.wb_read.close()
 
-
-    def run(self):
+    def run(self, csvfilename):
         if self.screener_exists(SCREENER_ORIGINAL_ABS_PATH) == True:
             logging.debug(f'Screener {SCREENER_FILENAME} found')
             self.make_temp_screener_copy(SCREENER_ORIGINAL_ABS_PATH)
             logging.debug(f'Screener copy was created: {SCREENER_FILENAME_PATH}')
             self.open_screener(SCREENER_FILENAME_PATH)
-            self.last_price_csv_to_dict('Prices.csv')
+            self.last_price_csv_to_dict(csvfilename)
+            logging.debug(f'Uploading prices from {csvfilename} to screener')
             self.load_new_prices()
             self.use_latest_values()
             self.get_available_ratios()
@@ -184,15 +189,21 @@ class Screener:
             self.recalculate_workbook(SCREENER_FILENAME_PATH)
             logging.debug('Reloading workbook on openpyxl')
             self.open_screener(SCREENER_FILENAME_PATH)
+            logging.debug(f'Collecting screener table to dataframe, sorting according to selected random ratio: {self.random_ratio}; cropping resulting df')
             self.table_to_df()
             self.crop_sort_df()
-            
-            print(self.sorted_cropped_df)
-            
+            logging.debug('Exporting data to a list')
+            self.form_export_data_list()
             self.close_screener()
+            logging.debug(f'{os.path.basename(__file__)} finished executing; returning list containing selected random ratio and dataframe')
+            return self.export_list
         else:
             logging.warning(f' PROGRAM TERMINATED. \n Please check directory: {SRC_DIR} \n File named {SCREENER_FILENAME} was not found there.')
-        logging.debug('--------FINISHED--------')
+            sys.exit()
         
+# Creating a class instance be to accessed from another module
+Screener_instance = Screener()
+
 if __name__ == '__main__':
-    Screener().run()
+    prices_csvfilename = input('Enter a full csv filename containing stock prices that will be uploaded to screener(example: data/Prices.csv): ')
+    Screener().run(prices_csvfilename)
