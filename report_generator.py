@@ -174,11 +174,13 @@ class InvestmentReport:
         ws = wb['Main']
         ws['B18'] = self.date_of_today_string
         ws['B19'] = self.last_week_date_string
+        ws['A21'] = self.random_ratio
         with pd.ExcelWriter(TEMPLATE_PATH, engine='openpyxl') as writer:
             writer.book = wb
             writer.sheets = dict((ws.title, ws) for ws in wb.worksheets)
             self.top_performers.to_excel(writer, index=False, header = False, startrow = 1, sheet_name = 'Main')
             self.worst_performers.to_excel(writer, index=False, header = False, startrow = 7, sheet_name = 'Main')
+            self.df_from_screener.to_excel(writer, index=False, header = False, startrow = 23, startcol = 20,  sheet_name = 'Main')
             writer.save()
 
     def remove_chart_outline(self):
