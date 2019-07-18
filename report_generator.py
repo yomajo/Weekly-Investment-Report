@@ -1,5 +1,4 @@
 import screener_handler
-# from screener_handler import Screener, Screener_instance
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
@@ -235,7 +234,6 @@ class InvestmentReport:
             logging.debug('temp xlsm file ready to be passed for image processing')
             self.generate_output()
             logging.debug(f'Report named: {self.report_file_name} is created in data/ folder')
-
             self.clean_temp_files()
             logging.debug('Temporary files have been deleted.\n---------------Program finished executing---------------')
         else:
