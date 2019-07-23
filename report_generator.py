@@ -184,7 +184,7 @@ class InvestmentReport:
             writer.save()
 
     def remove_chart_outline(self):
-        '''Copies template sheet to xlsm and removes chart outline via VBA script'''
+        '''Copies template sheet to xlsm, removes charts outline and changes axis number formatting via VBA script'''
         self.temp_TEMPLATE_PATH = TEMPLATE_PATH.replace('xlsx', 'xlsm')
         #Creating temp xlsxm empty workbook + macro
         writer = pd.ExcelWriter(TEMPLATE_PATH, engine='xlsxwriter')
