@@ -1,49 +1,67 @@
 # Weekly Investment Report
 
-Scope of program exceeds the term of the Python Programming Course, therefore this desription is devided into "Current Program", "Future Development" and "Potential Program Extensions" sections.
+## Description
+Program generates automated weekly content beneficial to investors of Baltic Region (Nasdaq OMX Baltic stock market).
 
-In short: Program should generate automated weekly content beneficial to investors of Baltic Region (Nasdaq OMX Baltic stock market). Report should be an excel template saved each week as a PNG or PDF file.
+Program combines data from two sources:
+- [Nasdaqomxbaltic](http://www.nasdaqomxbaltic.com) website;
+- personal excel "database"-screener named "OMXB analitika.xlsm"
 
-## Current and future data sources:
+scrapes new prices and edits a copy of provided screener.
+Resulting values are pushed to prepared excel template (data/Template.xlsx).
 
-- [Nasdaqomxbaltic](http://www.nasdaqomxbaltic.com)
-- excel database 'screener.xlsx' 
+Final output is a PNG image ready to be shared in social networks. See examples below.
 
-## Current Program:
+## Output Examples
 
-### Installation
-Simply execute report_generator.py from any IDE. Be sure you have installed modules listed in requirements.txt
+### Example #1
+
+![Report 2019.07.25](data/Report%202019.07.25.png)
+
+### Example #2
+
+To be added another day
+
+## Requirements
+
+- Python 3.7.3 +
+- Modules (and versions) listed in requirements.txt
+- Child `/data` folder containing:
+    - Template.xlsx
+    - vbaProject.bin
+
+### Workaround Screener issue
+
+User will not be able to replicate the same output, because `screener_handler.py` module refers to `OMXB analitika.xlsm` and manipulates it's contents, which is held in author's computer and contains semi-sensitive information. To by-pass this, in `report_generator.py` `run` method disable (delete/comment out) this line:
+
+- `self.get_data_from_screener(self.today_csv_filename)` - which queries screener file and returns a list of outputs.
+
+Additionally user should disable (delete/comment out) `report_generator.py` `load_data_to_template_excel` method lines:
+- `ws['A21'] = self.random_ratio`
+- `ws['B22'] = self.random_bool`
+- `self.df_from_screener.to_excel(writer, index=False, header = False, startrow = 23, startcol = 20,  sheet_name = 'Main')
+`
+
+This way Program only updates the upper section of output image (scrapes prices, calculates price change, pushes to Template.xlsx)
+
+## Installation
+
+Simply execute report_generator.py according to requirements listed above.
 
 ### Code Structure
 
 Program employs the benefits of Object Oriented Programming.
-Currently one class InvestmentReport is sufficient to cover the needs of the program.
+Two modules `report_generator.py` (main file) and `screener_handler.py` each have two classes `InvestmentReport` and `Screener` accordingly.
 
-Class methods:
+Each module/class has a `run` method, which is a combination of class methods when run as standalone. Methods' docstrings are self explanatory in most cases
 
-- url_builder: takes template url ("http://www.nasdaqbaltic.com/market/?pg=mainlist&date=yyyy.mm.dd&lang=en") and creates two url's based on date. One Url is for prices of today's trading session (last prices), while the other, needed for comparisson url is from last week session.
-- server_response_checker: simply checks if nasdaqomxbaltic website is responding with 200 code. If not - program terminates.
-- scrape_last_prices: scrapes listed companies prices and outputs a csv file for the url passed in.
-- performance_evaluation: takes two csv files from different time-based url scrapes and outputs excel file with two sheets, that contains top and worst performers. Method also outputs the list of these companies tickers for future code implementations.
-- run: method simply combines program excecusion sequence. Method also has condition, and if server is not responding, further methods are not executed and logging.warning is retured to console.
+## Potential Future Development:
 
-## Future Development
-
-- Add excel screener handler. Enable rewrite of last prices, extraction of selected sorted metrics from one sheet.
-- create report_template.xlsx
-- insert top/worst performers, selected data from screener, other important metrics to report, plot graphs, output a PNG/PDF.
-
-## Potential Program Extensions:
+- Migrating excel screener to database solution for full-blown web solution/app to access a ton of information;
 - Twitter bot
+- Setting up program on a server and send email/SMS whenever new report has been generated (each Saturday morning i.e.)
 
-## Criteria:
+### Acknowledgements
 
-- usability
-- originality
-- testing
-- style
-- documentation
-- version control
-- 'import this'
-
-Now get to `coding`.
+- [Aidis Stukas](https://github.com/aidiss) - my first Python bootcamp instructor. 
+- Robertas Skalskas for guidelines on joining two modules
