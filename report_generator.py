@@ -164,8 +164,8 @@ class InvestmentReport:
         '''Takes argument of csvfile path and writes dataframe returned by screener_handler.py module\'s method run as variable'''
         imported_list = screener_handler.Screener_instance.run(self.today_csv_filename)
         self.random_ratio = imported_list[0]
-        self.df_from_screener = imported_list[1]
-        # self.df_from_screener = Screener_instance.run(self.today_csv_filename)
+        self.random_bool = imported_list[1]
+        self.df_from_screener = imported_list[2]
         
     def load_data_to_template_excel(self):
         '''Loads dataframes, variables to pre-made Template.xlsx, without modifying the rest
@@ -175,6 +175,7 @@ class InvestmentReport:
         ws['B18'] = self.date_of_today_string
         ws['B19'] = self.last_week_date_string
         ws['A21'] = self.random_ratio
+        ws['B22'] = self.random_bool
         with pd.ExcelWriter(TEMPLATE_PATH, engine='openpyxl') as writer:
             writer.book = wb
             writer.sheets = dict((ws.title, ws) for ws in wb.worksheets)

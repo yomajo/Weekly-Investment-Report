@@ -159,8 +159,8 @@ class Screener:
         self.sorted_cropped_df = cropped_df.sort_values(by=[self.random_ratio], ascending=self.random_boolean).head(5)
     
     def form_export_data_list(self):
-        '''Forms a list of selected random ratio and a dataframe created by Screener class to be returned'''
-        self.export_list = [self.random_ratio, self.sorted_cropped_df]
+        '''Forms a list of selected random ratio, selected boolean and a dataframe created by Screener class to be returned'''
+        self.export_list = [self.random_ratio, self.random_boolean, self.sorted_cropped_df]
     
     def close_screener(self):
         '''Saves screener and closes workbook'''
