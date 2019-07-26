@@ -20,7 +20,7 @@ Final output is a PNG image ready to be shared in social networks. See examples 
 
 ### Example #2
 
-To be added another day
+![Report 2019.07.26](data/Report%202019.07.26.png)
 
 ## Requirements
 
