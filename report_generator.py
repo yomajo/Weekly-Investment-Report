@@ -16,22 +16,22 @@ logging.basicConfig(level=logging.DEBUG)
 #GLOBAL VARIABLES
 TEMPLATE_PATH = 'data/Template.xlsx'
 REPORT_FORMAT = '.png'
-TEMPLATE_URL1 = 'http://www.nasdaqbaltic.com/market/?pg=mainlist&date=yyyy.mm.dd&lang=en'
+TEMPLATE_URL1 = 'https://www.nasdaqbaltic.com/statistics/en/shares?date=yyyy.mm.dd'
 DATE_OF_TODAY = datetime.now()
 DATE_OF_LAST_WEEK = datetime.now() - timedelta(7)
 
 #PUBLIC FUNCTIONS
 def extract_company_name(td_tag_within_company_row):
-    company_name = td_tag_within_company_row[0].text
+    company_name = td_tag_within_company_row[0].a.text.strip()
     return company_name
 
-def extract_company_ticker(td_tag_within_company_row):
-    ticker = td_tag_within_company_row[1].text
-    ticker = ticker.replace('\xa0', '')
+def extract_company_ticker(td_tag_within_company_row, company_name):
+    temp_ticker = td_tag_within_company_row[0].text
+    ticker = temp_ticker.replace('\t' + company_name, '').replace('\tLP', '').replace('!', '').strip()
     return ticker
 
 def extract_last_price(td_tag_within_company_row):
-    last_price = td_tag_within_company_row[4].text
+    last_price = td_tag_within_company_row[6].text
     return last_price
 
 def subtract_day(date):
@@ -44,7 +44,7 @@ class InvestmentReport:
 
     def server_response_checker(self):
         '''method returns server response code of nasdaqomxbaltic.com website.'''
-        nasdaqomxbaltic_home_url = 'http://www.nasdaqbaltic.com/market/?lang=en'
+        nasdaqomxbaltic_home_url = 'https://www.nasdaqbaltic.com/?lang=en'
         r_check = requests.get(nasdaqomxbaltic_home_url)
         self.server_response = r_check.status_code
 
@@ -81,7 +81,8 @@ class InvestmentReport:
         r2 = requests.get(url2)
         soup1 = BeautifulSoup(r1.text, features='lxml')
         soup2 = BeautifulSoup(r2.text, features='lxml')
-        if soup1.find('p', 'errorMsg') == None and soup2.find('p', 'errorMsg') == None:
+        # Non-trading days/weekends soup contain unique div with class 'col-12 text-info'
+        if soup1.find('div', class_='col-12 text-info') == None and soup2.find('div', class_='col-12 text-info') == None:
             logging.debug('Both provided urls contain data, allowing to proceed with the program')
             return True
         else:
@@ -94,12 +95,12 @@ class InvestmentReport:
         self.soup = BeautifulSoup(r.text, features='lxml')
 
     def get_rows_containing_data(self):
-        '''Extracts rows containing actual companies data (containing attribute selector 'id' in HTML)'''
+        '''Extracts rows containing actual companies data (tr's have 27 td's and contains child class 'text16 compname')'''
         rows_containers = self.soup.find_all('tr')
         self.companies_rows = []
-        for i in rows_containers:
-            if i.has_attr('id'):
-                self.companies_rows.append(i)
+        for tr in rows_containers:
+            if len(tr) == 27 and 'text16 compname' in str(tr):
+                self.companies_rows.append(tr)
         
     def get_scrape_results(self):
         '''Iterates through row elements and outputs a list of dictionaries for each company.'''
@@ -110,7 +111,8 @@ class InvestmentReport:
             temp_d = {}
             td_tag_within_company_row = company.findAll('td')
             temp_d['Name'] = extract_company_name(td_tag_within_company_row)
-            temp_d['Ticker'] = extract_company_ticker(td_tag_within_company_row)
+            logging.info(f"Passing {temp_d['Name']} to ticker function")
+            temp_d['Ticker'] = extract_company_ticker(td_tag_within_company_row, temp_d['Name'])
             temp_d['Last Price'] = extract_last_price(td_tag_within_company_row)
             # output list of dictionaries:
             self.scrape_output.append(temp_d)
