@@ -57,8 +57,8 @@ class Screener:
         ws = self.wb['Prices']
         ws_read = self.wb_read['Prices']
         #Determining at which row should price uploading begin:
-        for cell in ws['E']:
-            if cell.value == 'Last':
+        for cell in ws['L']:
+            if cell.value == 'Last Price':
                 self.input_range_row = cell.row
                 break
 
@@ -66,7 +66,7 @@ class Screener:
         #iterating excel ticker range, if a match in csv formed dict is found - value is updated
         for cell in range(self.input_range_row, ws.max_row):
             if ws_read[f'W{cell}'].value in self.ticker_price_dict:
-                ws[f'E{cell}'].value = self.ticker_price_dict[ws_read[f'W{cell}'].value]
+                ws[f'L{cell}'].value = self.ticker_price_dict[ws_read[f'W{cell}'].value]
             self.count_uploaded += 1
         logging.debug(f'A total number of {self.count_uploaded} companies last prices were uploaded to temp. excel file')
 

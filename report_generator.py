@@ -111,7 +111,6 @@ class InvestmentReport:
             temp_d = {}
             td_tag_within_company_row = company.findAll('td')
             temp_d['Name'] = extract_company_name(td_tag_within_company_row)
-            logging.info(f"Passing {temp_d['Name']} to ticker function")
             temp_d['Ticker'] = extract_company_ticker(td_tag_within_company_row, temp_d['Name'])
             temp_d['Last Price'] = extract_last_price(td_tag_within_company_row)
             # output list of dictionaries:
