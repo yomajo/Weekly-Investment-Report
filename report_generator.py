@@ -27,7 +27,7 @@ def extract_company_name(td_tag_within_company_row):
 
 def extract_company_ticker(td_tag_within_company_row, company_name):
     temp_ticker = td_tag_within_company_row[0].text
-    ticker = temp_ticker.replace('\t' + company_name, '').replace('\tLP', '').replace('!', '').strip()
+    ticker = temp_ticker.replace('\t' + company_name, '').replace('\tLP', '').replace('\t', '').replace('-', '').replace('!', '').strip()
     return ticker
 
 def extract_last_price(td_tag_within_company_row):
