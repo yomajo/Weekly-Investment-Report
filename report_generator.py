@@ -26,12 +26,13 @@ def extract_company_name(td_tag_within_company_row):
     return company_name
 
 def extract_company_ticker(td_tag_within_company_row, company_name):
-    temp_ticker = td_tag_within_company_row[0].text
+    temp_ticker = td_tag_within_company_row[1].text
     ticker = temp_ticker.replace('\t' + company_name, '').replace('\tLP', '').replace('\t', '').replace('-', '').replace('!', '').strip()
     return ticker
 
 def extract_last_price(td_tag_within_company_row):
     last_price = td_tag_within_company_row[6].text
+    last_price = last_price.replace('-', '0')
     return last_price
 
 def subtract_day(date):
@@ -99,7 +100,7 @@ class InvestmentReport:
         rows_containers = self.soup.find_all('tr')
         self.companies_rows = []
         for tr in rows_containers:
-            if len(tr) == 27 and 'text16 compname' in str(tr):
+            if len(tr) == 33 and 'text16 compname' in str(tr):
                 self.companies_rows.append(tr)
         
     def get_scrape_results(self):
