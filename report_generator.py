@@ -31,8 +31,11 @@ def extract_company_ticker(td_tag_within_company_row, company_name):
     return ticker
 
 def extract_last_price(td_tag_within_company_row):
-    last_price = td_tag_within_company_row[6].text
-    last_price = last_price.replace('-', '0')
+    last_price = td_tag_within_company_row[2].text
+    if len(last_price) == 1:
+        last_price = last_price.replace('-', '0')
+    if len(last_price) == 0:
+        last_price = 0    
     return last_price
 
 def subtract_day(date):
@@ -239,8 +242,8 @@ class InvestmentReport:
             logging.debug('temp xlsm file ready to be passed for image processing')
             self.generate_output()
             logging.debug(f'Report named: {self.report_file_name} is created in data/ folder')
-            self.clean_temp_files()
-            logging.debug('Temporary files have been deleted.\n---------------Program finished executing---------------')
+            # self.clean_temp_files()
+            # logging.debug('Temporary files have been deleted.\n---------------Program finished executing---------------')
         else:
             logging.warning('\nWebsite is currently unreachable;\nProgram has terminated.')
 
