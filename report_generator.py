@@ -242,8 +242,8 @@ class InvestmentReport:
             logging.debug('temp xlsm file ready to be passed for image processing')
             self.generate_output()
             logging.debug(f'Report named: {self.report_file_name} is created in data/ folder')
-            # self.clean_temp_files()
-            # logging.debug('Temporary files have been deleted.\n---------------Program finished executing---------------')
+            self.clean_temp_files()
+            logging.debug('Temporary files have been deleted.\n---------------Program finished executing---------------')
         else:
             logging.warning('\nWebsite is currently unreachable;\nProgram has terminated.')
 
